@@ -199,7 +199,10 @@ async def explain_claim(req: ExplainRequest):
 
 # ── Datasets API ──────────────────────────────────────────────────────────────
 
-USER_UPLOADS_DIR = os.path.join(os.path.dirname(__file__), "datasets", "user_uploads")
+# ── Datasets API ──────────────────────────────────────────────────────────────
+
+DATASETS_DIR = os.path.join(os.path.dirname(__file__), "datasets")
+USER_UPLOADS_DIR = os.path.join(DATASETS_DIR, "user_uploads")
 os.makedirs(USER_UPLOADS_DIR, exist_ok=True)
 
 @lru_cache(maxsize=5)
@@ -216,6 +219,20 @@ def load_dataset(file_path: str):
 @app.get("/api/datasets")
 async def list_datasets():
     datasets = []
+    
+    if os.path.exists(DATASETS_DIR):
+        for f in os.listdir(DATASETS_DIR):
+            if not f.startswith('.') and not f.startswith('~'):
+                file_path = os.path.join(DATASETS_DIR, f)
+                if os.path.isfile(file_path):
+                    size_mb = os.path.getsize(file_path) / (1024 * 1024)
+                    datasets.append({
+                        "id": f"core|{f}",
+                        "name": f,
+                        "type": "core",
+                        "size_mb": round(size_mb, 2)
+                    })
+
     if os.path.exists(USER_UPLOADS_DIR):
         for f in os.listdir(USER_UPLOADS_DIR):
             if not f.startswith('.') and not f.startswith('~'):
@@ -223,7 +240,7 @@ async def list_datasets():
                 if os.path.isfile(file_path):
                     size_mb = os.path.getsize(file_path) / (1024 * 1024)
                     datasets.append({
-                        "id": f,
+                        "id": f"uploaded|{f}",
                         "name": f,
                         "type": "uploaded",
                         "size_mb": round(size_mb, 2)
@@ -249,7 +266,15 @@ class DatasetSearchRequest(BaseModel):
 
 @app.post("/api/datasets/search")
 async def search_dataset(req: DatasetSearchRequest):
-    file_path = os.path.join(USER_UPLOADS_DIR, req.dataset_id)
+    if req.dataset_id.startswith("core|"):
+        file_path = os.path.join(DATASETS_DIR, req.dataset_id.split("|")[1])
+    elif req.dataset_id.startswith("uploaded|"):
+        file_path = os.path.join(USER_UPLOADS_DIR, req.dataset_id.split("|")[1])
+    else:
+        file_path = os.path.join(USER_UPLOADS_DIR, req.dataset_id)
+        if not os.path.exists(file_path):
+            file_path = os.path.join(DATASETS_DIR, req.dataset_id)
+            
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Dataset not found")
         

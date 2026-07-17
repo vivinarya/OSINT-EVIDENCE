@@ -20,7 +20,7 @@ export function DatasetExplorer() {
 
   const fetchDatasets = async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/datasets');
+      const res = await fetch('/api/datasets');
       const json = await res.json();
       setDatasets(json.datasets || []);
     } catch (err) {
@@ -33,7 +33,7 @@ export function DatasetExplorer() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('http://localhost:8000/api/datasets/search', {
+      const res = await fetch('/api/datasets/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -76,7 +76,7 @@ export function DatasetExplorer() {
     setUploading(true);
     setError(null);
     try {
-      const res = await fetch('http://localhost:8000/api/datasets/upload', {
+      const res = await fetch('/api/datasets/upload', {
         method: 'POST',
         body: formData
       });
@@ -100,19 +100,19 @@ export function DatasetExplorer() {
     if (!data || !data.columns) return null;
     if (data.data.length === 0) {
       return (
-        <div className="text-center py-10 text-gray-500">
+        <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
           No records found matching "{keyword}".
         </div>
       );
     }
 
     return (
-      <div className="overflow-x-auto rounded-md border border-gray-800 bg-[#0c0c0e]">
-        <table className="w-full text-sm text-left text-gray-300">
-          <thead className="text-xs text-gray-400 uppercase bg-gray-900 border-b border-gray-800">
+      <div style={{ overflowX: 'auto', borderRadius: '4px', border: '1px solid var(--border)', background: 'var(--bg-elevated)', marginTop: '1rem' }}>
+        <table style={{ width: '100%', fontSize: '0.875rem', textAlign: 'left', borderCollapse: 'collapse', color: 'var(--text-primary)' }}>
+          <thead style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', background: 'var(--bg-hover)', borderBottom: '1px solid var(--border)' }}>
             <tr>
               {data.columns.map(col => (
-                <th key={col} className="px-4 py-3 font-medium truncate max-w-[200px]" title={col}>
+                <th key={col} style={{ padding: '12px 16px', fontWeight: 600, whiteSpace: 'nowrap', borderRight: '1px solid var(--border)' }} title={col}>
                   {col}
                 </th>
               ))}
@@ -120,9 +120,9 @@ export function DatasetExplorer() {
           </thead>
           <tbody>
             {data.data.map((row, i) => (
-              <tr key={i} className="border-b border-gray-800 hover:bg-gray-800/50 transition-colors">
+              <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
                 {data.columns.map(col => (
-                  <td key={`${i}-${col}`} className="px-4 py-3 truncate max-w-[200px]" title={String(row[col])}>
+                  <td key={`${i}-${col}`} style={{ padding: '12px 16px', whiteSpace: 'nowrap', maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', borderRight: '1px solid var(--border)' }} title={String(row[col])}>
                     {String(row[col])}
                   </td>
                 ))}
@@ -135,140 +135,179 @@ export function DatasetExplorer() {
   };
 
   return (
-    <div className="h-full flex flex-col p-6 max-w-[1600px] mx-auto w-full gap-6">
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-100 flex items-center gap-2">
-            <Database className="w-6 h-6 text-blue-500" />
-            Dataset Explorer
-          </h1>
-          <p className="text-gray-400 text-sm mt-1">
-            Upload and search tabular data for open-source intelligence.
-          </p>
+    <section className="section" style={{ paddingTop: 0 }}>
+      <div className="container" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h2 className="mono" style={{ fontSize: '1rem', color: 'var(--text-primary)', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Database size={20} color="var(--data)" /> DATASET EXPLORER
+            </h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+              Upload and search tabular data for open-source intelligence.
+            </p>
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleFileUpload}
+              style={{ display: 'none' }} 
+              accept=".csv,.xlsx,.xls,.json" 
+            />
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading}
+              className="mono"
+              style={{
+                background: 'transparent', border: '1px solid var(--border-accent)', color: 'var(--accent)',
+                padding: '8px 16px', fontSize: '0.65rem', cursor: uploading ? 'not-allowed' : 'pointer', textTransform: 'uppercase',
+                display: 'flex', alignItems: 'center', gap: '8px', opacity: uploading ? 0.6 : 1, transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => {
+                if(!uploading) {
+                  e.currentTarget.style.color = 'var(--bg-primary)';
+                  e.currentTarget.style.background = 'var(--accent)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if(!uploading) {
+                  e.currentTarget.style.color = 'var(--accent)';
+                  e.currentTarget.style.background = 'transparent';
+                }
+              }}
+            >
+              {uploading ? <Loader2 size={14} style={{ animation: 'pulse 1.5s infinite' }} /> : <UploadCloud size={14} />}
+              {uploading ? 'UPLOADING...' : 'UPLOAD DATASET'}
+            </button>
+          </div>
         </div>
-        
-        <div className="flex items-center gap-3">
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            onChange={handleFileUpload}
-            className="hidden" 
-            accept=".csv,.xlsx,.xls,.json" 
-          />
-          <button 
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center gap-2 text-sm font-medium transition-colors disabled:opacity-50"
-          >
-            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
-            {uploading ? 'Uploading...' : 'Upload Dataset'}
-          </button>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {/* Sidebar / Controls */}
-        <div className="md:col-span-1 flex flex-col gap-4">
-          <div className="bg-[#111113] border border-gray-800 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-gray-300 mb-3 uppercase tracking-wider">Available Datasets</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(250px, 1fr) 3fr', gap: '1.5rem', alignItems: 'start' }}>
+          {/* Sidebar */}
+          <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '4px', padding: '16px' }}>
+            <h3 className="mono" style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginBottom: '12px', textTransform: 'uppercase' }}>AVAILABLE DATASETS</h3>
             {datasets.length === 0 ? (
-              <p className="text-sm text-gray-500 italic">No datasets available. Please upload one.</p>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>No datasets available.</p>
             ) : (
-              <div className="flex flex-col gap-2">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {datasets.map(ds => (
                   <button
                     key={ds.id}
                     onClick={() => setSelectedDataset(ds.id)}
-                    className={`flex items-center gap-2 text-left p-2 rounded-md text-sm transition-colors ${selectedDataset === ds.id ? 'bg-blue-900/30 text-blue-400 border border-blue-800/50' : 'text-gray-400 hover:bg-gray-800 hover:text-gray-200 border border-transparent'}`}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '8px', padding: '10px',
+                      background: selectedDataset === ds.id ? 'var(--bg-hover)' : 'transparent',
+                      border: `1px solid ${selectedDataset === ds.id ? 'var(--border-accent)' : 'transparent'}`,
+                      color: selectedDataset === ds.id ? 'var(--text-primary)' : 'var(--text-secondary)',
+                      borderRadius: '4px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s'
+                    }}
+                    onMouseEnter={e => {
+                      if(selectedDataset !== ds.id) e.currentTarget.style.background = 'var(--bg-hover)';
+                    }}
+                    onMouseLeave={e => {
+                      if(selectedDataset !== ds.id) e.currentTarget.style.background = 'transparent';
+                    }}
                   >
                     {ds.name.endsWith('.csv') || ds.name.endsWith('.xlsx') ? (
-                      <FileSpreadsheet className="w-4 h-4 shrink-0" />
+                      <FileSpreadsheet size={16} />
                     ) : (
-                      <FileJson className="w-4 h-4 shrink-0" />
+                      <FileJson size={16} />
                     )}
-                    <span className="truncate" title={ds.name}>{ds.name}</span>
-                    <span className="text-[10px] text-gray-600 ml-auto">{ds.size_mb} MB</span>
+                    <span style={{ fontSize: '0.85rem', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ds.name}</span>
+                    <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }} className="mono">{ds.size_mb} MB</span>
                   </button>
                 ))}
               </div>
             )}
           </div>
-        </div>
 
-        {/* Main Content Area */}
-        <div className="md:col-span-3 flex flex-col gap-4 flex-1">
-          {error && (
-            <div className="bg-red-900/20 border border-red-900/50 text-red-400 p-3 rounded-md flex items-center gap-2 text-sm">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              {error}
-            </div>
-          )}
-
-          {!selectedDataset ? (
-            <div className="flex-1 border border-dashed border-gray-800 rounded-lg flex flex-col items-center justify-center p-12 text-gray-500 bg-[#111113]/50 min-h-[400px]">
-              <Database className="w-12 h-12 mb-4 opacity-50" />
-              <p>Select a dataset from the sidebar or upload a new one to begin exploring.</p>
-            </div>
-          ) : (
-            <>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
-                  <input
-                    type="text"
-                    value={keyword}
-                    onChange={(e) => setKeyword(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSearch(1)}
-                    placeholder="Search keywords in dataset..."
-                    className="w-full bg-[#111113] border border-gray-800 rounded-md pl-10 pr-4 py-2 text-sm text-gray-200 focus:outline-none focus:border-blue-500 transition-colors"
-                  />
-                </div>
-                <button
-                  onClick={() => handleSearch(1)}
-                  disabled={loading}
-                  className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Search
-                </button>
+          {/* Main Area */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0 }}>
+            {error && (
+              <div style={{ background: 'var(--danger-dim)', border: '1px solid var(--danger)', color: '#fff', padding: '12px', borderRadius: '4px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <AlertCircle size={16} /> {error}
               </div>
+            )}
 
-              {loading ? (
-                <div className="flex-1 flex items-center justify-center py-20 min-h-[400px]">
-                  <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+            {!selectedDataset ? (
+              <div style={{ border: '1px dashed var(--border)', borderRadius: '4px', padding: '48px 24px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <Database size={48} style={{ opacity: 0.2, marginBottom: '16px', display: 'inline-block' }} />
+                <p style={{ fontSize: '0.9rem' }}>Select a dataset from the sidebar or upload a new one to begin.</p>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <div style={{ position: 'relative', flex: 1 }}>
+                    <Search size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                    <input
+                      type="text"
+                      value={keyword}
+                      onChange={(e) => setKeyword(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSearch(1)}
+                      placeholder="Search keywords in dataset..."
+                      style={{
+                        width: '100%', background: 'var(--bg-elevated)', border: '1px solid var(--border)',
+                        color: 'var(--text-primary)', padding: '10px 12px 10px 36px', borderRadius: '4px',
+                        fontSize: '0.9rem', outline: 'none'
+                      }}
+                      onFocus={e => e.currentTarget.style.borderColor = 'var(--data)'}
+                      onBlur={e => e.currentTarget.style.borderColor = 'var(--border)'}
+                    />
+                  </div>
+                  <button
+                    onClick={() => handleSearch(1)}
+                    disabled={loading}
+                    className="mono"
+                    style={{
+                      background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-primary)',
+                      padding: '0 24px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', textTransform: 'uppercase'
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-hover)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'var(--bg-elevated)'}
+                  >
+                    Search
+                  </button>
                 </div>
-              ) : (
-                <div className="flex flex-col gap-4">
-                  {data && (
-                    <div className="flex justify-between items-center text-sm text-gray-400">
-                      <span>Found {data.total_records.toLocaleString()} rows</span>
-                      <div className="flex items-center gap-4">
-                        <span>Page {page} of {totalPages}</span>
-                        <div className="flex gap-1">
-                          <button 
-                            disabled={page <= 1}
-                            onClick={() => handleSearch(page - 1)}
-                            className="px-2 py-1 bg-gray-800 rounded hover:bg-gray-700 disabled:opacity-50"
-                          >
-                            Prev
-                          </button>
-                          <button 
-                            disabled={page >= totalPages}
-                            onClick={() => handleSearch(page + 1)}
-                            className="px-2 py-1 bg-gray-800 rounded hover:bg-gray-700 disabled:opacity-50"
-                          >
-                            Next
-                          </button>
+
+                {loading ? (
+                  <div style={{ padding: '64px 0', textAlign: 'center' }}>
+                    <p className="mono" style={{ color: 'var(--data)', fontSize: '0.85rem' }}>{'>'} querying dataset<span className="dots"></span></p>
+                  </div>
+                ) : (
+                  <div>
+                    {data && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                        <span className="mono">FOUND {data.total_records.toLocaleString()} ROWS</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                          <span className="mono">PAGE {page} OF {totalPages}</span>
+                          <div style={{ display: 'flex', gap: '4px' }}>
+                            <button 
+                              disabled={page <= 1}
+                              onClick={() => handleSearch(page - 1)}
+                              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '4px 8px', borderRadius: '4px', cursor: page <= 1 ? 'not-allowed' : 'pointer', fontSize: '0.7rem' }}
+                            >
+                              PREV
+                            </button>
+                            <button 
+                              disabled={page >= totalPages}
+                              onClick={() => handleSearch(page + 1)}
+                              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)', padding: '4px 8px', borderRadius: '4px', cursor: page >= totalPages ? 'not-allowed' : 'pointer', fontSize: '0.7rem' }}
+                            >
+                              NEXT
+                            </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
-                  {renderTable()}
-                </div>
-              )}
-            </>
-          )}
+                    )}
+                    {renderTable()}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </section>
   );
 }
