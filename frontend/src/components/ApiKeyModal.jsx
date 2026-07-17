@@ -83,7 +83,7 @@ export default function ApiKeyModal({ onSave, onCancel, initialBazaarLink = '', 
               <input
                 type={showBazaarLink ? 'text' : 'password'}
                 value={bazaarLink}
-                onChange={(e) => setBazaarLink(e.target.value)}
+                onChange={(e) => setBazaarLink(e.target.value.replace(/\s+/g, ''))}
                 placeholder="sk-bl-..."
                 className="mono"
                 style={{
@@ -91,29 +91,57 @@ export default function ApiKeyModal({ onSave, onCancel, initialBazaarLink = '', 
                   background: 'var(--bg-primary)',
                   border: '1px solid var(--border)',
                   color: 'var(--text-primary)',
-                  padding: '10px 42px 10px 12px',
+                  padding: '10px 84px 10px 12px',
                   fontSize: '0.75rem',
                   outline: 'none',
                 }}
               />
-              <button
-                type="button"
-                onClick={() => setShowBazaarLink(!showBazaarLink)}
-                className="mono"
-                style={{
-                  position: 'absolute',
-                  right: 8, top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--text-muted)',
-                  fontSize: '0.55rem',
-                  cursor: 'pointer',
-                  padding: '4px 6px',
-                }}
-              >
-                {showBazaarLink ? 'HIDE' : 'SHOW'}
-              </button>
+              <div style={{
+                position: 'absolute',
+                right: 8, top: '50%',
+                transform: 'translateY(-50%)',
+                display: 'flex',
+                gap: 6,
+              }}>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const text = await navigator.clipboard.readText()
+                      setBazaarLink(text.replace(/\s+/g, ''))
+                      setError('')
+                    } catch {
+                      setError('Please paste manually using Ctrl+V.')
+                    }
+                  }}
+                  className="mono"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--accent)',
+                    fontSize: '0.55rem',
+                    cursor: 'pointer',
+                    padding: '4px 6px',
+                  }}
+                >
+                  PASTE
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowBazaarLink(!showBazaarLink)}
+                  className="mono"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    fontSize: '0.55rem',
+                    cursor: 'pointer',
+                    padding: '4px 6px',
+                  }}
+                >
+                  {showBazaarLink ? 'HIDE' : 'SHOW'}
+                </button>
+              </div>
             </div>
           </div>
 
@@ -126,7 +154,7 @@ export default function ApiKeyModal({ onSave, onCancel, initialBazaarLink = '', 
               <input
                 type={showFirecrawl ? 'text' : 'password'}
                 value={firecrawl}
-                onChange={(e) => setFirecrawl(e.target.value)}
+                onChange={(e) => setFirecrawl(e.target.value.replace(/\s+/g, ''))}
                 placeholder="fc-..."
                 className="mono"
                 style={{
@@ -134,29 +162,57 @@ export default function ApiKeyModal({ onSave, onCancel, initialBazaarLink = '', 
                   background: 'var(--bg-primary)',
                   border: '1px solid var(--border)',
                   color: 'var(--text-primary)',
-                  padding: '10px 42px 10px 12px',
+                  padding: '10px 84px 10px 12px',
                   fontSize: '0.75rem',
                   outline: 'none',
                 }}
               />
-              <button
-                type="button"
-                onClick={() => setShowFirecrawl(!showFirecrawl)}
-                className="mono"
-                style={{
-                  position: 'absolute',
-                  right: 8, top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'transparent',
-                  border: 'none',
-                  color: 'var(--text-muted)',
-                  fontSize: '0.55rem',
-                  cursor: 'pointer',
-                  padding: '4px 6px',
-                }}
-              >
-                {showFirecrawl ? 'HIDE' : 'SHOW'}
-              </button>
+              <div style={{
+                position: 'absolute',
+                right: 8, top: '50%',
+                transform: 'translateY(-50%)',
+                display: 'flex',
+                gap: 6,
+              }}>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const text = await navigator.clipboard.readText()
+                      setFirecrawl(text.replace(/\s+/g, ''))
+                      setError('')
+                    } catch {
+                      setError('Please paste manually using Ctrl+V.')
+                    }
+                  }}
+                  className="mono"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--accent)',
+                    fontSize: '0.55rem',
+                    cursor: 'pointer',
+                    padding: '4px 6px',
+                  }}
+                >
+                  PASTE
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowFirecrawl(!showFirecrawl)}
+                  className="mono"
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--text-muted)',
+                    fontSize: '0.55rem',
+                    cursor: 'pointer',
+                    padding: '4px 6px',
+                  }}
+                >
+                  {showFirecrawl ? 'HIDE' : 'SHOW'}
+                </button>
+              </div>
             </div>
           </div>
 

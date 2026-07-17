@@ -124,21 +124,8 @@ export default function App() {
       <ReactLenis root options={{ lerp: 0.1, duration: 1.0, smoothWheel: true, autoRaf: false }}>
         <Header />
 
-        {/* Credentials Status & Config Panel */}
+        {/* Credentials Config Panel */}
         <div className="container" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
-          {serverHasKeys && !bazaarLinkKey && !firecrawlKey ? (
-            <span className="mono" style={{ fontSize: '0.58rem', color: 'var(--success)', letterSpacing: '0.05em' }}>
-              ● USING SERVER API CREDENTIALS
-            </span>
-          ) : (bazaarLinkKey && firecrawlKey) ? (
-            <span className="mono" style={{ fontSize: '0.58rem', color: 'var(--data)', letterSpacing: '0.05em' }}>
-              ● USING LOCAL BROWSER CREDENTIALS
-            </span>
-          ) : (
-            <span className="mono" style={{ fontSize: '0.58rem', color: 'var(--accent)', letterSpacing: '0.05em' }}>
-              ▲ CREDENTIALS REQUIRED FOR DEPLOYMENT
-            </span>
-          )}
           <button
             className="mono"
             onClick={() => setShowModal(true)}
