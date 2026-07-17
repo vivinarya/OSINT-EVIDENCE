@@ -141,6 +141,24 @@ python run.py --cli "Investigate Mossack Fonseca and related offshore entities"
 - **React dashboard**: GSAP-animated investigation board with evidence cards, contradiction panels, terminal log
 - **Streamlit UI**: Alternative standalone UI with evidence graph visualization
 
+## Multi-Agent Confidence Scoring
+
+EVIDENCE uses a highly decoupled, multi-agent geometric scoring formula to calculate the final Confidence Score (`CS`) for every claim:
+
+**Formula**: `CS = (SA × TF) × (CC × NI) × 100`
+
+The pipeline is orchestrated across four specialized agents:
+
+1. **Source Tagger Agent (SA)**: Determines Source Authority (0.0 to 1.0) using TLD structural rules (e.g., `.gov`, `.mil`), social media ceilings, whitelists, and suspicion heuristics for unknown domains.
+2. **Temporal Scoping Agent (TF)**: Computes the Temporal Factor using an exponential decay function (`TF = e^(-λ·t)`) based on the nature of the claim. Breaking news decays quickly (`λ = 0.5`) while static historical facts do not decay (`λ = 0`).
+3. **Network Graph Agent (CC & NI)**: Builds a domain family cluster graph of all corroborating sources.
+   - **Corroboration Count (CC)**: Evaluates corroboration saturation based on independent sources.
+   - **Network Independence (NI)**: Measures domain diversity. Actively detects **echo chambers** (e.g., when multiple corroborating claims all come from subdomains of the same parent company) and applies a severe penalty to the NI score.
+4. **Contradiction & Adversarial Agent**: Scans the entire evidence ledger for counter-claims using explicit cross-referencing and semantic negation scanning. Computes a `debunk_score` weighted by the counter-claim's source authority.
+
+**Logic States**: 
+Claims are ultimately classified into actionable states: `VERIFIED_FACT` (CS ≥ 65, no disputes), `BREAKING_CLAIM` (sole or fresh source, needs corroboration), `ACTIVE_DISPUTE` (conflicting evidence exists), or `DEBUNKED` (high-authority active contradiction).
+
 ## Project Structure
 
 ```
