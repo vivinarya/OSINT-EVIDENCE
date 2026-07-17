@@ -133,7 +133,7 @@ python run.py --cli "Investigate Mossack Fonseca and related offshore entities"
 - **LLM-powered planning**: Breaks investigative questions into parallel sub-queries
 - **13 research tools**: Wikidata, ICIJ, OFAC, GDELT, OpenSanctions, web search, etc.
 - **Evidence ledger**: Every claim recorded with source citation, confidence score, and extraction method
-- **Confidence scoring**: 4-factor model (source reliability, corroboration, recency, source independence)
+- **Confidence scoring**: Multi-agent geometric scoring pipeline (Source Authority × Temporal Factor × Corroboration Count × Network Independence) with echo chamber detection
 - **Cross-referencing**: Heuristic + optional LLM-based claim comparison
 - **Contradiction detection**: Severity-graded conflict identification
 - **Explainability**: Per-claim reasoning replay ("why does the agent think this?")
@@ -174,9 +174,14 @@ python run.py --cli "Investigate Mossack Fonseca and related offshore entities"
 │   │   ├── firecrawl_scraper.py # Firecrawl scrape/search/map/extract
 │   │   └── opencorporates.py    # OpenCorporates (paid, degraded)
 │   ├── verification/
-│   │   ├── confidence_scorer.py     # 4-factor confidence model
+│   │   ├── orchestrator.py          # Central Scoring Orchestrator
+│   │   ├── source_tagger.py         # Source Authority Agent
+│   │   ├── temporal_agent.py        # Temporal Scoping Agent
+│   │   ├── network_graph_agent.py   # Network Graph Agent
+│   │   ├── adversarial_agent.py     # Contradiction & Adversarial Agent
+│   │   ├── cross_referencer.py      # Claim corroboration linking
 │   │   ├── contradiction_detector.py # Cross-claim conflict detection
-│   │   └── cross_referencer.py     # Claim corroboration linking
+│   │   └── confidence_scorer.py     # Legacy 4-factor model
 │   ├── reporting/
 │   │   ├── report_generator.py  # Structured markdown reports
 │   │   └── evidence_explainer.py # Per-claim explainability

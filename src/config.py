@@ -8,6 +8,8 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "")
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "")
 SERPER_API_KEY = os.getenv("SERPER_API_KEY", "")
 OPENCORPORATES_API_KEY = os.getenv("OPENCORPORATES_API_KEY", "")
@@ -19,19 +21,30 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
 FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY", "fc-91d975f50e294bcf9cca7c00c7461f8b")
 
-LLM_PROVIDER = "anthropic" if ANTHROPIC_API_KEY else "openai"
+LLM_PROVIDER = "gemini" if GEMINI_API_KEY else ("anthropic" if ANTHROPIC_API_KEY else "openai")
 
 SOURCE_RELIABILITY_TIERS = {
     "high": [
-        "sec.gov", "opencorporates.com", "opensanctions.org",
-        "treasury.gov", "icij.org", "congress.gov", "courts.gov",
-        "gdeltproject.org", "reuters.com", "bloomberg.com",
-        "wsj.com", "ft.com", "ap.org", "reuters.com",
+        # US Government — primary sources
+        "whitehouse.gov", "sec.gov", "treasury.gov", "congress.gov",
+        "courts.gov", "justice.gov", "doj.gov", "fbi.gov", "cia.gov",
+        "state.gov", "federalregister.gov", "archives.gov", "usa.gov",
+        # OSINT / financial databases
+        "opencorporates.com", "opensanctions.org", "icij.org",
+        "gdeltproject.org", "ofac.treas.gov",
+        # Tier-1 journalism (primary source / wire services)
+        "reuters.com", "bloomberg.com", "ap.org", "apnews.com",
+        "wsj.com", "ft.com",
     ],
     "medium": [
-        "nytimes.com", "washingtonpost.com", "bbc.com",
-        "theguardian.com", "economist.com", "nature.com",
-        "science.org", "cnbc.com", "forbes.com", "businessinsider.com",
+        # Reputable journalism
+        "nytimes.com", "washingtonpost.com", "bbc.com", "bbc.co.uk",
+        "theguardian.com", "economist.com", "cnbc.com",
+        "forbes.com", "businessinsider.com",
+        # Reference
+        "wikipedia.org", "britannica.com",
+        # Science
+        "nature.com", "science.org",
     ],
     "low": [],  # everything else
 }

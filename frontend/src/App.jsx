@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ReactLenis, useLenis } from 'lenis/react'
-import { gsap, ScrollTrigger } from './lib/gsap'
+import { gsap } from './lib/gsap'
 import Header from './components/Header'
 import SearchBar from './components/SearchBar'
 import InvestigationBoard from './components/InvestigationBoard'
@@ -21,11 +21,15 @@ export default function App() {
 
   useEffect(() => {
     if (!lenis) return
-    lenis.on('scroll', ScrollTrigger.update)
-    const raf = (time) => lenis.raf(time * 1000)
-    gsap.ticker.add(raf)
+    // Correct integration: stop Lenis' internal RAF and drive it via GSAP ticker
+    lenis.stop()
+    const update = (time) => lenis.raf(time * 1000)
+    gsap.ticker.add(update)
     gsap.ticker.lagSmoothing(0)
-    return () => { gsap.ticker.remove(raf) }
+    lenis.start()
+    return () => {
+      gsap.ticker.remove(update)
+    }
   }, [lenis])
 
   const handleInvestigate = useCallback(async (q) => {
@@ -52,14 +56,17 @@ export default function App() {
   return (
     <>
       <MagneticCursor />
-      <ReactLenis root options={{ lerp: 0.08, duration: 1.2, smoothWheel: true }}>
+      <ReactLenis root options={{ lerp: 0.1, duration: 1.0, smoothWheel: true, autoRaf: false }}>
         <Header />
         <SearchBar onInvestigate={handleInvestigate} loading={investigating} />
         {investigating && (
           <section className="section">
             <div className="container">
-              <p className="mono" style={{ color: 'var(--data)', fontSize: '0.875rem' }}>
-                {'>'} running investigation pipeline...
+              <p className="mono" style={{
+                color: 'var(--data)', fontSize: '0.875rem',
+                animation: 'pulse 1.5s ease-in-out infinite',
+              }}>
+                {'>'} running investigation<span className="dots"></span>
               </p>
             </div>
           </section>
@@ -77,7 +84,7 @@ export default function App() {
           <>
             <InvestigationBoard claims={results.claims} />
             <ContradictionPanel contradictions={results.contradictions} claims={results.claims} />
-            <ReportView claims={results.claims} contradictions={results.contradictions} query={query} />
+            <ReportView claims={results.claims} contradictions={results.contradictions} query={query} report={results.report} />
             <ToolPanel sources={results.sources} />
           </>
         )}

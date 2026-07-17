@@ -23,8 +23,36 @@ class WebSearchTool(BaseTool):
         elif FIRECRAWL_API_KEY:
             return await FirecrawlSearchTool().run({"query": query})
         else:
-            return ToolResult(success=False, error="No search API key configured. "
-                                                    "Use wikidata, icij_data, ofac_sdn, or gdelt for offline queries.")
+            return await self._duckduckgo_search(query, max_results)
+
+    async def _duckduckgo_search(self, query: str, max_results: int) -> ToolResult:
+        try:
+            from duckduckgo_search import DDGS
+            results = []
+            snippets = []
+            urls = []
+            with DDGS() as ddgs:
+                for i, r in enumerate(ddgs.text(query, max_results=max_results)):
+                    title = r.get("title", "")
+                    body = r.get("body", "")
+                    href = r.get("href", "")
+                    snippets.append(f"- {title}: {body[:300]}")
+                    if href:
+                        urls.append(href)
+                    results.append(r)
+            if not results:
+                return ToolResult(success=False, error=f"No web results found for '{query}'")
+            return ToolResult(
+                success=True,
+                data=results,
+                source_type="web_search",
+                source_url=urls[0] if urls else "",
+                title=f"Web search: {query}",
+                snippet="\n".join(snippets),
+                raw_text=json.dumps(results, indent=2),
+            )
+        except Exception as e:
+            return ToolResult(success=False, error=f"DuckDuckGo search failed: {e}")
 
     async def _tavily_search(self, query: str, max_results: int) -> ToolResult:
         try:

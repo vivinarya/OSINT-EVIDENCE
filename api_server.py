@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from src.llm_client import LLMClient
 from src.agent.react_loop import InvestigativeAgent
 from src.reporting import ReportGenerator, EvidenceExplainer
-from src.verification import ContradictionDetector
+from src.verification import ScoringOrchestrator, ContradictionDetector
 
 app = FastAPI(title="OSINT Investigative Agent API")
 _last_ledger = None
@@ -43,55 +43,109 @@ async def investigate(req: QueryRequest):
     result = await agent.investigate(req.query)
 
     ledger = result["ledger"]
+
+    # ── Multi-Agent Scoring Pipeline ─────────────────────────────────────────
+    # ScoringOrchestrator internally:
+    #   1. Runs CrossReferencer  (builds corroboration links)
+    #   2. Phase 1 parallel: SourceTagger + Temporal + NetworkGraph
+    #   3. Phase 2 serial:   Adversarial (needs graph from Phase 1)
+    #   4. Applies geometric CS = (SA×TF)×(CC×NI)×100 to every claim
+    orchestrator = ScoringOrchestrator()
+    orchestrator.score_all(ledger)
+
+    # ── Contradiction detection (uses updated scores) ─────────────────────────
     all_claims = ledger.get_all_claims()
     contradictions = ContradictionDetector().find_contradictions(ledger)
 
+    # ── Serialise claims with full scoring breakdown ──────────────────────────
     claims_out = []
-    for c in sorted(all_claims, key=lambda x: x.confidence, reverse=True):
+    for c in sorted(all_claims, key=lambda x: x.confidence_raw, reverse=True):
         claims_out.append({
-            "id": c.claim_id,
-            "text": c.text,
-            "confidence": c.confidence,
-            "source": {
-                "source_type": c.source.source_type,
-                "source_url": c.source.source_url,
-                "retrieval_tool": c.source.retrieval_tool,
-                "title": c.source.title,
+            # Core
+            "id":         c.claim_id,
+            "text":       c.text,
+
+            # New geometric scoring
+            "confidence_raw":   round(c.confidence_raw, 1),   # 0–100
+            "confidence":       round(c.confidence, 4),        # 0.0–1.0 (backwards compat)
+            "confidence_state": c.confidence_state,            # logic state string
+
+            # Component breakdown — for the frontend score bar
+            "score_breakdown": {
+                "source_authority":      round(c.source_authority, 3),
+                "temporal_factor":       round(c.temporal_factor, 3),
+                "corroboration_score":   round(c.corroboration_score, 3),
+                "network_independence":  round(c.network_independence, 3),
             },
+
+            # Temporal metadata
+            "claim_type":   c.claim_type,
+            "decay_lambda": c.decay_lambda,
+
+            # Echo chamber flag
+            "echo_chamber": c.echo_chamber,
+
+            # Scoring reasoning (per-agent notes)
+            "scoring_notes": c.scoring_notes,
+
+            # Source info
+            "source": {
+                "source_type":    c.source.source_type,
+                "url":            c.source.source_url,    # ← used by SourceBadge
+                "source_url":     c.source.source_url,
+                "retrieval_tool": c.source.retrieval_tool,
+                "title":          c.source.title or "",
+                "snippet":        (c.source.snippet or "")[:200],
+            },
+
+            # Relationship links
             "corroborating_claim_ids": c.corroborating_claim_ids,
             "contradicting_claim_ids": c.contradicting_claim_ids,
         })
 
+    # ── Serialise contradictions ──────────────────────────────────────────────
     contradictions_out = []
     for cd in contradictions:
         contradictions_out.append({
-            "id_a": cd["claim_a"]["id"],
-            "id_b": cd["claim_b"]["id"],
-            "severity": cd["severity"].upper(),
-            "reason": "",
+            "id_a":         cd["claim_a"]["id"],
+            "id_b":         cd["claim_b"]["id"],
+            "severity":     cd["severity"].upper(),
+            "reason":       cd.get("reason", ""),
+            "confidence_a": cd["confidence_a"],
+            "confidence_b": cd["confidence_b"],
         })
 
+    # ── Serialise unique sources (deduped by URL) ─────────────────────────────
     sources_out = []
-    seen_sources = set()
+    seen_source_urls = set()
     for c in all_claims:
-        key = c.source.source_type
-        if key not in seen_sources:
-            seen_sources.add(key)
+        url = c.source.source_url
+        if url and url not in seen_source_urls:
+            seen_source_urls.add(url)
             sources_out.append({
                 "source_type": c.source.source_type,
-                "title": c.source.title or c.source.source_type,
+                "title":       c.source.title or c.source.source_type,
+                "url":         url,
             })
 
     _last_ledger = ledger
 
     return {
-        "query": req.query,
-        "claims": claims_out,
-        "contradictions": contradictions_out,
-        "sources": sources_out,
-        "report": result.get("report", ""),
-        "claim_count": len(claims_out),
-        "source_count": len(sources_out),
+        "query":           req.query,
+        "claims":          claims_out,
+        "contradictions":  contradictions_out,
+        "sources":         sources_out,
+        "report":          str(result.get("report", "") or ""),
+        "claim_count":     len(claims_out),
+        "source_count":    len(sources_out),
+        # Summary stats for dashboard
+        "stats": {
+            "verified_facts":   sum(1 for c in all_claims if c.confidence_state == "VERIFIED_FACT"),
+            "breaking_claims":  sum(1 for c in all_claims if c.confidence_state == "BREAKING_CLAIM"),
+            "active_disputes":  sum(1 for c in all_claims if c.confidence_state == "ACTIVE_DISPUTE"),
+            "debunked":         sum(1 for c in all_claims if c.confidence_state == "DEBUNKED"),
+            "echo_chambers":    sum(1 for c in all_claims if c.echo_chamber),
+        },
     }
 
 

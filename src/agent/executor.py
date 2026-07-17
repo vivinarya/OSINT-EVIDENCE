@@ -2,8 +2,11 @@ from __future__ import annotations
 import asyncio
 import json
 from src.llm_client import LLMClient
+
+TOOL_TIMEOUT = 15  # seconds per tool call
 from src.evidence_ledger import EvidenceLedger, Source
 from src.agent.claim_extractor import ClaimExtractor
+from src.tools.base import ToolResult
 from src.tools import (
     WebSearchTool, WebScraperTool, WikidataTool,
     OpenCorporatesTool, OpenSanctionsTool, WaybackTool,
@@ -35,7 +38,10 @@ async def _run_one_step(step: dict, llm: LLMClient, ledger: EvidenceLedger, clai
     if not tool:
         return {"step": step, "success": False, "error": f"Unknown tool: {tool_name}"}
 
-    tool_result = await tool.run(params)
+    try:
+        tool_result = await asyncio.wait_for(tool.run(params), timeout=TOOL_TIMEOUT)
+    except asyncio.TimeoutError:
+        tool_result = ToolResult(success=False, error=f"Tool '{tool_name}' timed out after {TOOL_TIMEOUT}s")
     source = Source(
         source_type=tool_result.source_type,
         source_url=tool_result.source_url,

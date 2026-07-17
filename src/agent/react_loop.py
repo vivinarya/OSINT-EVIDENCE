@@ -42,29 +42,10 @@ class InvestigativeAgent:
 
     async def investigate(self, query: str) -> dict:
         plan = await self.planner.plan(query)
-        all_results = []
-        step_count = 0
 
         if plan:
             batch = plan[:STEP_CAP]
-            results = await self.executor.execute_plan(batch, parallel=True)
-            all_results.extend(results)
-            step_count += len(batch)
-
-        evidence_summary = self._summarize_evidence()
-        reflect = await self.llm.generate_json(
-            REFLECT_PROMPT.format(query=query, evidence_summary=evidence_summary)
-        )
-        decision = reflect.get("decision", "continue") if isinstance(reflect, dict) else "continue"
-
-        if decision != "report":
-            follow_up = reflect.get("follow_up", "") if isinstance(reflect, dict) else ""
-            if follow_up and step_count < STEP_CAP:
-                adaptive_results = await self.executor.adaptive_search(follow_up, evidence_summary)
-                all_results.extend(adaptive_results)
-
-        if self.ledger.claims:
-            evidence = _forward_message(list(self.ledger.claims.keys()), self.ledger)
+            await self.executor.execute_plan(batch, parallel=True)
 
         return await self._generate_report(query)
 
@@ -72,7 +53,17 @@ class InvestigativeAgent:
         evidence_json = self.ledger.to_dict()
         prompt = REPORT_PROMPT.format(query=query, evidence_json=str(evidence_json)[:12000])
         response = await self.llm.generate_json(prompt)
-        report_text = response.get("report", "") if isinstance(response, dict) else str(response)
+        if isinstance(response, dict):
+            report_text = response.get("report", "")
+            # LLM sometimes returns nested: {"report": {"text": "..."}} or {"report": {...}}
+            if isinstance(report_text, dict):
+                # Try common sub-keys, fallback to JSON dump
+                report_text = (report_text.get("text") or report_text.get("content")
+                               or report_text.get("report") or str(report_text))
+            elif not isinstance(report_text, str):
+                report_text = str(report_text)
+        else:
+            report_text = str(response) if response else ""
 
         return {
             "query": query,

@@ -1,7 +1,7 @@
 from __future__ import annotations
 import json
 import re
-from src.config import LLM_PROVIDER, ANTHROPIC_API_KEY, OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL
+from src.config import LLM_PROVIDER, ANTHROPIC_API_KEY, OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL, GEMINI_API_KEY, GEMINI_MODEL
 
 
 class LLMClient:
@@ -16,9 +16,21 @@ class LLMClient:
         return await self._generate_text(prompt, max_tokens)
 
     async def _generate_text(self, prompt: str, max_tokens: int = 2048) -> str:
+        if self.provider == "gemini":
+            return await self._gemini_call(prompt, max_tokens)
         if self.provider == "anthropic":
             return await self._anthropic_call(prompt, max_tokens)
         return await self._openai_call(prompt, max_tokens)
+
+    async def _gemini_call(self, prompt: str, max_tokens: int) -> str:
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=GEMINI_API_KEY)
+            model = genai.GenerativeModel(GEMINI_MODEL)
+            response = await model.generate_content_async(prompt)
+            return response.text or ""
+        except Exception as e:
+            return f"Error: {e}"
 
     async def _anthropic_call(self, prompt: str, max_tokens: int) -> str:
         try:

@@ -1,25 +1,23 @@
 import { useRef, useEffect } from 'react'
+import { gsap } from '../lib/gsap'
 
 export default function MagneticCursor() {
   const cursorRef = useRef(null)
   const pos = useRef({ x: 0, y: 0, cx: 0, cy: 0 })
 
   useEffect(() => {
-    const onMouse = (e) => { pos.current.x = e.clientX; pos.current.y = e.clientY }
-    const onLeave = () => { cursorRef.current.style.opacity = '0' }
-    const onEnter = () => { cursorRef.current.style.opacity = '1' }
-    window.addEventListener('mousemove', onMouse)
+    const onMouse = (e) => {
+      pos.current.x = e.clientX
+      pos.current.y = e.clientY
+    }
+    const onLeave = () => { if (cursorRef.current) cursorRef.current.style.opacity = '0' }
+    const onEnter = () => { if (cursorRef.current) cursorRef.current.style.opacity = '1' }
+
+    window.addEventListener('mousemove', onMouse, { passive: true })
     document.addEventListener('mouseleave', onLeave)
     document.addEventListener('mouseenter', onEnter)
-    return () => {
-      window.removeEventListener('mousemove', onMouse)
-      document.removeEventListener('mouseleave', onLeave)
-      document.removeEventListener('mouseenter', onEnter)
-    }
-  }, [])
 
-  useEffect(() => {
-    let raf
+    // Drive cursor via GSAP ticker — shares the same RAF loop, no extra overhead
     const tick = () => {
       const p = pos.current
       p.cx += (p.x - p.cx) * 0.12
@@ -27,25 +25,32 @@ export default function MagneticCursor() {
       if (cursorRef.current) {
         cursorRef.current.style.transform = `translate(${p.cx - 12}px, ${p.cy - 12}px)`
       }
-      raf = requestAnimationFrame(tick)
     }
-    raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+    gsap.ticker.add(tick)
+
+    return () => {
+      window.removeEventListener('mousemove', onMouse)
+      document.removeEventListener('mouseleave', onLeave)
+      document.removeEventListener('mouseenter', onEnter)
+      gsap.ticker.remove(tick)
+    }
   }, [])
 
   return (
     <div
       ref={cursorRef}
-      className="cursor"
       style={{
         position: 'fixed',
-        width: 24, height: 24,
+        width: 24,
+        height: 24,
         borderRadius: '50%',
         border: '1.5px solid var(--accent)',
         pointerEvents: 'none',
         zIndex: 9999,
         mixBlendMode: 'difference',
         transition: 'opacity 0.3s ease',
+        top: 0,
+        left: 0,
       }}
     />
   )

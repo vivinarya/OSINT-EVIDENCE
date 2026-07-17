@@ -8,19 +8,19 @@ For each sub-question, specify:
 2. Which tool to use (choose from the list below)
 3. What parameters to pass to the tool
 
-Available tools (prefer local data tools when possible):
+Available tools:
 - wikidata: Query Wikidata for entity data (params: entity, query_type: describe|corporate|search) — NO API KEY NEEDED
 - icij_data: Query local ICIJ Offshore Leaks data (params: entity, query_type: search_entity|search_officer|search_intermediary|get_entity_relationships) — NO API KEY NEEDED
 - ofac_sdn: Query the OFAC sanctions list for blocked entities (params: query, country, program) — NO API KEY NEEDED
 - gdelt: Query GDELT conflict/event data for recent events globally (params: country, event_type, actor, quad_class, limit, days_back) — NO API KEY NEEDED
 - opensanctions: Sanctions/watchlist search (params: entity) — NO API KEY NEEDED
 - wayback: Check archived version of a URL (params: url) — NO API KEY NEEDED
-- firecrawl_search: Web search via Firecrawl (params: query)
+- web_search: General web search (params: query) — works with any API key or free DuckDuckGo fallback
 - firecrawl_scraper: Scrape a specific URL for clean content (params: url)
 - firecrawl_extract: Extract structured JSON data from a URL via LLM (params: url, prompt)
-- web_search: General web search (params: query) — requires extra API key, use firecrawl_search instead
 
-Note: opencorporates is a paid service and unavailable.
+NOTE: opencorporates is a paid service and unavailable. Always use web_search for general web lookups.
+WEB_SEARCH IS FREE AND WORKS FOR ANY QUERY — use it for every investigation.
 
 IMPORTANT: You must respond with ONLY valid JSON. No explanations, no markdown, no code fences.
 
