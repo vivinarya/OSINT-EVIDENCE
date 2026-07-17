@@ -65,62 +65,100 @@ An autonomous investigative agent that researches entities, people, and organiza
 ## Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
+|---|---|
 | **Frontend** | React 19, Vite 6, GSAP 3.15, Lenis 1.2, React Router 7 |
 | **Backend** | Python 3.11+, FastAPI, Uvicorn |
 | **Agent** | LLM-based planner + tool executor + claim extractor |
-| **LLM** | OpenRouter (`gpt-oss-20b:free`) / Anthropic Claude |
+| **LLM** | BazaarLink API (running Google `gemma-3-12b-it`) |
 | **Data Layer** | Pandas, NetworkX, BeautifulSoup, httpx |
-| **UI (alt)** | Streamlit (standalone, no frontend needed) |
 | **Datasets** | Wikidata SPARQL, ICIJ Offshore Leaks (898MB), OFAC SDN List, GDELT Event Database, OpenSanctions |
 
-## Quick Start
+---
 
-### Prerequisites
+## Detailed Run Guide
+
+Follow these step-by-step instructions to set up and run the entire EVIDENCE OSINT Investigative Agent platform locally or prepare it for a public server deployment.
+
+### Step 1: Environment & Dependency Installation
+
+#### 1. Backend Setup
+Make sure you have Python 3.11 or later installed. Navigate to the project root and execute:
 ```bash
+# 1. Create a virtual environment
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# 2. Activate the virtual environment
+# On Windows:
+venv\Scripts\activate
+# On Linux/macOS:
+source venv/bin/activate
+
+# 3. Install required Python packages
 pip install -r requirements.txt
 ```
 
-### Configuration (Deployment Ready)
-Create a `.env` file in the root directory (based on `.env.example`):
-```env
-# Leave empty to require client-supplied keys in the browser:
-OPENAI_API_KEY=
-OPENAI_BASE_URL=https://bazaarlink.ai/api/v1
-OPENAI_MODEL=gpt-oss-20b
+#### 2. Frontend Setup
+Make sure you have Node.js (v18+) and npm installed.
+```bash
+# Navigate to the frontend folder and install npm packages
+cd frontend
+npm install
+cd ..
+```
 
-FIRECRAWL_API_KEY=
+---
+
+### Step 2: API Keys & Configuration
+
+Create a `.env` file in the root directory:
+```env
+# ── BAZAARLINK CONFIGURATION ──
+OPENAI_API_KEY=sk-bl-...
+OPENAI_BASE_URL=https://bazaarlink.ai/api/v1
+# We recommend Google's Gemma 3 model for high performance & low latency:
+OPENAI_MODEL=gemma-3-12b-it
+
+# ── FIRECRAWL SEARCH CONFIGURATION ──
+FIRECRAWL_API_KEY=fc-...
+
+# ── PIPELINE CONFIGURATION ──
 STEP_CAP=15
 LOG_LEVEL=INFO
 ```
-*Note: If `OPENAI_API_KEY` and `FIRECRAWL_API_KEY` are left blank on the server, the frontend will automatically lock the board and prompt the user to input their keys in the initialization setup screen. If configured on the server, the frontend will seamlessly use the server's keys with the option to override them locally.*
 
-### API Credentials Required
-1. **BazaarLink API Key**: Sign up at [bazaarlink.ai](https://bazaarlink.ai) to obtain your key. We recommend using fast, low-cost models like `gpt-oss-20b` or `gemma-3-12b-it`.
-2. **Firecrawl API Key**: Sign up at [firecrawl.dev](https://firecrawl.dev) to get a web searching/scraping key.
+#### 📝 Deployment & Zero-Server-Storage Mode
+If you leave `OPENAI_API_KEY` and `FIRECRAWL_API_KEY` **blank** in the `.env` file:
+*   The application enters **Secure Deployment Mode**.
+*   The frontend website locks automatically on first launch and displays a setup window requiring the user to paste their own API keys.
+*   Keys are stored in the user's browser `localStorage` and sent over HTTPS headers, keeping the server completely clean of sensitive user keys.
 
-### Run Backend (API Server)
+---
+
+### Step 3: Launching the Applications
+
+To run the application, you need to start both the Python backend and the React frontend.
+
+#### 1. Launch the Backend API Server
+In a terminal (with the virtual environment activated), run:
 ```bash
 python api_server.py
-# → http://localhost:8000
 ```
+*   The API server will launch at **`http://localhost:8000`**.
+*   You can access the automated API documentation at `http://localhost:8000/docs`.
 
-### Run Frontend (separate terminal)
+#### 2. Launch the Frontend Dashboard
+In a second terminal window, navigate to the `frontend/` directory and run:
 ```bash
 cd frontend
-npm install
 npm run dev
-# → http://localhost:3000
 ```
+*   The Vite developer server will start at **`http://localhost:3000`**.
+*   Open your browser and navigate to `http://localhost:3000` to begin your investigations!
 
-### Run Standalone (Streamlit, no frontend needed)
-```bash
-streamlit run src/ui/app.py
-```
+---
 
-### Run CLI Mode
+### Alternative: Run via Command Line Interface (CLI)
+You can run an investigation directly from your terminal (bypassing the web interface) using:
 ```bash
 python run.py --cli "Investigate Mossack Fonseca and related offshore entities"
 ```
@@ -209,11 +247,9 @@ Claims are ultimately classified into actionable states: `VERIFIED_FACT` (CS ≥
 │   │   ├── cross_referencer.py      # Claim corroboration linking
 │   │   ├── contradiction_detector.py # Cross-claim conflict detection
 │   │   └── confidence_scorer.py     # Legacy 4-factor model
-│   ├── reporting/
-│   │   ├── report_generator.py  # Structured markdown reports
-│   │   └── evidence_explainer.py # Per-claim explainability
-│   └── ui/
-│       └── app.py               # Streamlit user interface
+│   └── reporting/
+│       ├── report_generator.py  # Structured markdown reports
+│       └── evidence_explainer.py # Per-claim explainability
 ├── frontend/
 │   ├── package.json
 │   ├── vite.config.js
@@ -245,9 +281,17 @@ Claims are ultimately classified into actionable states: `VERIFIED_FACT` (CS ≥
 
 ## Screenshots
 
-*(Screenshots of the setup screen, evidence cards, contradiction panels, and final reports)*
+### 1. Investigation Launch & Search
+![Investigation Launch](docs/search_screen.png)
 
-- **API Credentials Setup Screen**: `![Setup Screen Placeholder](docs/setup_screen.png)`
-- **GSAP Evidence Board Grid**: `![Evidence Board Placeholder](docs/evidence_board.png)`
-- **Side-by-Side Contradiction Panel**: `![Contradiction Panel Placeholder](docs/contradiction_panel.png)`
-- **Metrics Dashboard & Narrative Report**: `![Narrative Report Placeholder](docs/report_view.png)`
+### 2. GSAP-Animated Evidence Board Grid
+![GSAP Evidence Board](docs/evidence_board.png)
+
+### 3. Side-by-Side Contradiction Panel
+![Contradiction Panel](docs/contradiction_panel.png)
+
+### 4. Metrics Dashboard & Narrative Report
+![Report Dashboard](docs/report_view.png)
+
+### 5. Corroborating Claims & Source Attributions
+![Sources List](docs/sources_list.png)
