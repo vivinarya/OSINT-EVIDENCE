@@ -136,6 +136,7 @@ async def investigate(req: QueryRequest):
         "contradictions":  contradictions_out,
         "sources":         sources_out,
         "report":          str(result.get("report", "") or ""),
+        "report_confidence": result.get("report_confidence", 0.0),
         "claim_count":     len(claims_out),
         "source_count":    len(sources_out),
         # Summary stats for dashboard

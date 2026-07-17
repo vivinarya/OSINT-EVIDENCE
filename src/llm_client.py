@@ -23,12 +23,31 @@ class LLMClient:
         return await self._openai_call(prompt, max_tokens)
 
     async def _gemini_call(self, prompt: str, max_tokens: int) -> str:
+        import asyncio
         try:
             import google.generativeai as genai
             genai.configure(api_key=GEMINI_API_KEY)
             model = genai.GenerativeModel(GEMINI_MODEL)
-            response = await model.generate_content_async(prompt)
-            return response.text or ""
+            
+            max_retries = 5
+            backoff = 2.0
+            
+            for attempt in range(max_retries):
+                try:
+                    response = await model.generate_content_async(prompt)
+                    # If response lacks text due to safety block or other, handle safely
+                    if hasattr(response, "text"):
+                        return response.text or ""
+                    return str(response)
+                except Exception as e:
+                    err_msg = str(e)
+                    is_rate_limit = any(x in err_msg for x in ["429", "ResourceExhausted", "Quota", "quota", "rate limit", "Rate limit", "limit exceeded"])
+                    if is_rate_limit and attempt < max_retries - 1:
+                        sleep_time = backoff * (2 ** attempt)
+                        print(f"[LLM] Gemini rate limit hit (attempt {attempt+1}/{max_retries}). Retrying in {sleep_time:.1f}s...")
+                        await asyncio.sleep(sleep_time)
+                        continue
+                    raise e
         except Exception as e:
             return f"Error: {e}"
 

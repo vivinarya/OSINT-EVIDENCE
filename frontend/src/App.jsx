@@ -84,7 +84,7 @@ export default function App() {
           <>
             <InvestigationBoard claims={results.claims} />
             <ContradictionPanel contradictions={results.contradictions} claims={results.claims} />
-            <ReportView claims={results.claims} contradictions={results.contradictions} query={query} report={results.report} />
+            <ReportView claims={results.claims} contradictions={results.contradictions} query={query} report={results.report} reportConfidence={results.report_confidence} />
             <ToolPanel sources={results.sources} />
           </>
         )}

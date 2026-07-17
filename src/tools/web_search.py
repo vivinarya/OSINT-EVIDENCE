@@ -1,6 +1,7 @@
 from __future__ import annotations
 import json
 import httpx
+from bs4 import BeautifulSoup
 from .base import BaseTool, ToolResult
 from src.config import TAVILY_API_KEY, SERPER_API_KEY, FIRECRAWL_API_KEY
 from .firecrawl_scraper import FirecrawlSearchTool
@@ -16,30 +17,55 @@ class WebSearchTool(BaseTool):
         if not query:
             return ToolResult(success=False, error="No query provided")
 
+        providers = []
         if TAVILY_API_KEY:
-            return await self._tavily_search(query, max_results)
-        elif SERPER_API_KEY:
-            return await self._serper_search(query, max_results)
-        elif FIRECRAWL_API_KEY:
-            return await FirecrawlSearchTool().run({"query": query})
-        else:
-            return await self._duckduckgo_search(query, max_results)
+            providers.append(lambda: self._tavily_search(query, max_results))
+        if SERPER_API_KEY:
+            providers.append(lambda: self._serper_search(query, max_results))
+        if FIRECRAWL_API_KEY:
+            providers.append(lambda: FirecrawlSearchTool().run({"query": query, "limit": max_results}))
+        providers.append(lambda: self._duckduckgo_search(query, max_results))
+
+        last_error = "No search providers available"
+        for provider in providers:
+            result = await provider()
+            if result.success:
+                return result
+            if result.error:
+                last_error = result.error
+
+        return ToolResult(success=False, error=last_error)
 
     async def _duckduckgo_search(self, query: str, max_results: int) -> ToolResult:
         try:
-            from duckduckgo_search import DDGS
-            results = []
-            snippets = []
-            urls = []
-            with DDGS() as ddgs:
-                for i, r in enumerate(ddgs.text(query, max_results=max_results)):
-                    title = r.get("title", "")
-                    body = r.get("body", "")
-                    href = r.get("href", "")
+            async with httpx.AsyncClient(timeout=30, follow_redirects=True) as client:
+                resp = await client.get(
+                    "https://html.duckduckgo.com/html/",
+                    params={"q": query},
+                    headers={"User-Agent": "Mozilla/5.0"},
+                )
+                resp.raise_for_status()
+                soup = BeautifulSoup(resp.text, "lxml")
+                results = []
+                snippets = []
+                urls = []
+                for node in soup.select(".result")[:max_results]:
+                    title_node = node.select_one(".result__title")
+                    snippet_node = node.select_one(".result__snippet")
+                    link_node = node.select_one(".result__url")
+                    title = title_node.get_text(" ", strip=True) if title_node else ""
+                    body = snippet_node.get_text(" ", strip=True) if snippet_node else ""
+                    href = ""
+                    if title_node and title_node.find("a"):
+                        href = title_node.find("a").get("href", "")
+                    if not href and link_node:
+                        href = link_node.get_text(" ", strip=True)
+                    if href and href.startswith("//"):
+                        href = f"https:{href}"
                     snippets.append(f"- {title}: {body[:300]}")
                     if href:
                         urls.append(href)
-                    results.append(r)
+                    results.append({"title": title, "body": body, "href": href})
             if not results:
                 return ToolResult(success=False, error=f"No web results found for '{query}'")
             return ToolResult(
@@ -64,6 +90,8 @@ class WebSearchTool(BaseTool):
                 resp.raise_for_status()
                 data = resp.json()
                 results = data.get("results", [])
+                if not results:
+                    return ToolResult(success=False, error=f"Tavily returned no results for '{query}'")
                 urls = [r.get("url", "") for r in results]
                 snippets = "\n".join(
                     f"- {r.get('title', '')}: {r.get('content', '')[:500]}"
@@ -92,6 +120,8 @@ class WebSearchTool(BaseTool):
                 resp.raise_for_status()
                 data = resp.json()
                 results = data.get("organic", [])
+                if not results:
+                    return ToolResult(success=False, error=f"Serper returned no results for '{query}'")
                 snippets = "\n".join(
                     f"- {r.get('title', '')}: {r.get('snippet', '')[:500]}"
                     for r in results

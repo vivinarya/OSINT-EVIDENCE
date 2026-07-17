@@ -122,3 +122,22 @@ a:hover { color: var(--text-primary); }
   .section { padding: 48px 0; }
   .container { padding: 0 16px; }
 }
+
+.card-action-btn {
+  flex: 1;
+  padding: 8px 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  transition: all 0.25s var(--ease-smooth);
+}
+
+.card-action-btn:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}

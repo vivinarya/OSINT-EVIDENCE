@@ -141,7 +141,7 @@ function renderInline(text) {
 }
 
 // Mini stat pill
-function StatPill({ label, value, color }) {
+function StatPill({ label, value, color, fontFamily, fontSize }) {
   return (
     <div style={{
       background: 'var(--bg-surface)',
@@ -154,14 +154,19 @@ function StatPill({ label, value, color }) {
       <span className="mono" style={{ fontSize: '0.6rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
         {label}
       </span>
-      <span style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', color: color || 'var(--text-primary)', lineHeight: 1 }}>
+      <span style={{
+        fontFamily: fontFamily || 'var(--font-display)',
+        fontSize: fontSize || '2rem',
+        color: color || 'var(--text-primary)',
+        lineHeight: 1,
+      }}>
         {value}
       </span>
     </div>
   )
 }
 
-export default function ReportView({ claims, contradictions, query, report }) {
+export default function ReportView({ claims, contradictions, query, report, reportConfidence }) {
   const sectionRef = useRef(null)
   const [expanded, setExpanded] = useState(false)
 
@@ -207,14 +212,21 @@ export default function ReportView({ claims, contradictions, query, report }) {
           <StatPill label="Unique Sources" value={sourceCount} color="var(--data)" />
           <StatPill label="High Confidence" value={highConf} color="var(--success)" />
           <StatPill
+            label="Report Confidence"
+            value={typeof reportConfidence === 'number' ? reportConfidence.toFixed(2) : '0.00'}
+            color="var(--accent)"
+          />
+          <StatPill
             label="Conflicts"
             value={contradictions.length || 0}
             color={contradictions.length ? 'var(--danger)' : 'var(--success)'}
           />
           <StatPill
             label="Timestamp"
-            value={new Date().toISOString().slice(11, 19) + 'Z'}
-            color="var(--text-muted)"
+            value={new Date().toTimeString().slice(0, 8)}
+            color="var(--text-secondary)"
+            fontFamily="var(--font-mono)"
+            fontSize="1.25rem"
           />
         </div>
 

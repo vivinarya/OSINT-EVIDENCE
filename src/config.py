@@ -19,7 +19,7 @@ GDELT_API_KEY = os.getenv("GDELT_API_KEY", "")
 STEP_CAP = int(os.getenv("STEP_CAP", "15"))
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
-FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY", "fc-91d975f50e294bcf9cca7c00c7461f8b")
+FIRECRAWL_API_KEY = os.getenv("FIRECRAWL_API_KEY", "")
 
 LLM_PROVIDER = "gemini" if GEMINI_API_KEY else ("anthropic" if ANTHROPIC_API_KEY else "openai")
 

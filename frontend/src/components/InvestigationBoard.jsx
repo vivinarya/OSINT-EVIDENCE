@@ -22,19 +22,18 @@ export default function InvestigationBoard({ claims }) {
         }
       )
 
-      // Parallax scroll: each card translates at a slightly different rate
+      // Bounded parallax scroll: cards shift in the same direction at slightly different rates
       cards.forEach((card, i) => {
-        const direction = i % 2 === 0 ? -1 : 1
-        const speed = 20 + i * 8  // varied depth
+        const speed = 10 + (i % 3) * 8  // bounded depth (10px, 18px, 26px)
 
         gsap.to(card, {
-          y: direction * speed,
+          y: -speed,
           ease: 'none',
           scrollTrigger: {
             trigger: card,
             start: 'top bottom',
             end: 'bottom top',
-            scrub: 1.2,   // smooth scrubbing, not laggy
+            scrub: 1.2,
           },
         })
       })
