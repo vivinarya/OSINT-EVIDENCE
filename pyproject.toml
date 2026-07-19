@@ -31,3 +31,6 @@ pythonpath = ["src"]
 
 [project.scripts]
 osint-agent = "src.ui.app:main"
+
+[tool.vercel]
+entrypoint = "api_server:app"
